@@ -19,12 +19,10 @@ public:
 	Date(const int& y, const int& m, const int& d) {
 
 		if (m>12 || m <1) {
-			string error = "Month value is invalid: " + to_string(m);
-			throw invalid_argument(error);
+			throw invalid_argument("Month value is invalid: " + to_string(m));
 		}
 		if (d>31 || d <1) {
-			string error = "Day value is invalid: " + to_string(d);
-			throw invalid_argument(error);
+			throw invalid_argument("Day value is invalid: " + to_string(d));
 		}
 		year = y;
 		month = m;
@@ -70,77 +68,30 @@ ostream& operator<<(ostream& stream, const Date& date) {
 	return stream;
 }
 
-bool CheckDate(const char& c, bool sw) {
-	if (sw) {
-		if ((c == '-') || (c == '+') || isdigit(c)) {
-			return true;
-		}
-		else return false;
-	}
-	else if (isdigit(c)) {
-		return true;
-	}
-	else  return false;
-}
 
-void BuildDate(const string& obt, string& year, string& month, string& day) {
-	bool AllowSign = true;
-	int i = 0;
-	int DatePart = 0;
-	while (i<obt.size()) {
-		if (AllowSign == true) {
-			if (!CheckDate(obt[i], true)) {
-				string error = "Wrong date format: " + obt;
-				throw invalid_argument(error);
-			}
-			AllowSign = false;
-		}
-		else {
-			if (obt[i] == '-') {
-				AllowSign = true;
-				if (DatePart == 2) {
-					string error = "Wrong date format: " + obt;
-					throw invalid_argument(error);
-				}
-				DatePart++;
-				i++;
-				continue;
-			}
-			else {
-				if (!CheckDate(obt[i], false)) {
-					string error = "Wrong date format: " + obt;
-					throw invalid_argument(error);
-				}
-			}
-		}
-		if (DatePart == 0) year += obt[i];
-		if (DatePart == 1) month += obt[i];
-		if (DatePart == 2) day += obt[i];
-		i++;
-		if (DatePart > 2) {
-			string error = "Wrong date format: " + obt;
-			throw invalid_argument(error);
-		}
+Date ParseDate(const string& date) {
+	istringstream ObtDate(date);
+	bool correct = true;
+
+	int year;
+	correct = ObtDate >> year && ObtDate.peek() == '-' && correct;
+	ObtDate.ignore(1);
+
+	int month;
+	correct = ObtDate >> month && ObtDate.peek() == '-' && correct;
+	ObtDate.ignore(1);
+
+	int day;
+	correct = ObtDate >> day && ObtDate.eof() && correct;
+
+	if (!correct) {
+		throw invalid_argument("Wrong date format: " + date);
 	}
-	if ((year.size() == 0) || (month.size() == 0) || (day.size() == 0) || (year == "-" || year == "+" || month == "-" || month == "+" || day == "-" || day == "+")) {
-		string error = "Wrong date format: " + obt;
-		throw invalid_argument(error);
-	}
+	return Date(year, month, day);
 }
 
 
-istream& operator>>(istream& stream, Date& date) {
-	string year, month, day;
-	string obt;
-	stream >> obt;
-	BuildDate(obt, year, month, day);
-	int y, m, d;
-	y = stoi(year);
-	m = stoi(month);
-	d = stoi(day);
-	date = { y,m,d };
-	return stream;
-}
+
 
 class DataBase {
 public:
@@ -198,20 +149,22 @@ int main() {
 	while (getline(cin, s)) {
 		stringstream ObtCommand(s);
 		string command;
-		string Obtdate;
+		string StrDate;
 		string event;
 		try {
 			ObtCommand >> command;
 			if (command == "Add") {
 				Date date;
-				ObtCommand >> date;
+				ObtCommand >> StrDate;
+				date = ParseDate(StrDate);
 				ObtCommand >> event;
 				db.AddEvent(date, event);
 				continue;
 			}
 			if (command == "Del") {
 				Date date;
-				ObtCommand >> date;
+				ObtCommand >> StrDate;
+				date = ParseDate(StrDate);
 				ObtCommand >> event;
 				if (event.size() == 0) {
 					int N = db.DeleteDate(date);
@@ -229,7 +182,8 @@ int main() {
 			}
 			if (command == "Find") {
 				Date date;
-				ObtCommand >> date;
+				ObtCommand >> StrDate;
+				date = ParseDate(StrDate);
 				db.Find(date);
 				continue;
 			}
